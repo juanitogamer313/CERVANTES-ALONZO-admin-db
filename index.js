@@ -182,6 +182,8 @@ app.delete("/products/:id", async (req, res) => {
 // PURCHASES
 // =====================================
 
+// Método	Ruta	            Descripción
+// POST	    /purchases	        Crear nueva compra con detalles
 app.post("/purchases", async (req, res) => {
   const { user_id, status, details } = req.body;
   if (!user_id || !status || !details || details.length === 0)
@@ -254,6 +256,8 @@ app.post("/purchases", async (req, res) => {
   }
 });
 
+// Método	Ruta	            Descripción
+// PUT	    /purchases/:id	    Actualizar compra existente
 app.put("/purchases/:id", async (req, res) => {
   const { id } = req.params;
   const { user_id, status, details } = req.body;
@@ -357,6 +361,8 @@ app.put("/purchases/:id", async (req, res) => {
   }
 });
 
+// Método	Ruta	            Descripción
+// GET	    /purchases	        Obtener todas las compras con detalles
 app.get("/purchases", async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -400,6 +406,8 @@ app.get("/purchases", async (req, res) => {
   }
 });
 
+// Método	Ruta	            Descripción
+// GET	    /purchases/:id	    Obtener una compra específica
 app.get("/purchases/:id", async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -440,6 +448,8 @@ app.get("/purchases/:id", async (req, res) => {
   }
 });
 
+// Método	Ruta	            Descripción
+// DELETE	/purchases/:id	    Eliminar compra (si no está COMPLETED)
 app.delete("/purchases/:id", async (req, res) => {
   const id = req.params.id;
   const connection = await pool.getConnection();
