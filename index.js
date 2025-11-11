@@ -339,6 +339,49 @@ app.put("/purchases/:id", async (req, res) => {
   }
 });
 
+app.get("/purchases", async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        p.id AS purchase_id, u.name AS user, p.total, p.status, p.purchase_date,
+        d.id AS detail_id, pr.name AS product, d.quantity, d.price, d.subtotal
+      FROM purchases p
+      JOIN users u ON p.user_id = u.id
+      JOIN purchase_details d ON p.id = d.purchase_id
+      JOIN products pr ON d.product_id = pr.id
+      ORDER BY p.id;
+    `);
+
+    const result = [];
+    const map = {};
+
+    rows.forEach((row) => {
+      if (!map[row.purchase_id]) {
+        map[row.purchase_id] = {
+          id: row.purchase_id,
+          user: row.user,
+          total: row.total,
+          status: row.status,
+          purchase_date: row.purchase_date,
+          details: [],
+        };
+        result.push(map[row.purchase_id]);
+      }
+      map[row.purchase_id].details.push({
+        id: row.detail_id,
+        product: row.product,
+        quantity: row.quantity,
+        price: row.price,
+        subtotal: row.subtotal,
+      });
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener compras" });
+  }
+});
+
 // =====================================
 // SERVIDOR
 // =====================================
