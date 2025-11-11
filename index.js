@@ -382,6 +382,46 @@ app.get("/purchases", async (req, res) => {
   }
 });
 
+app.get("/purchases/:id", async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        p.id AS purchase_id, u.name AS user, p.total, p.status, p.purchase_date,
+        d.id AS detail_id, pr.name AS product, d.quantity, d.price, d.subtotal
+      FROM purchases p
+      JOIN users u ON p.user_id = u.id
+      JOIN purchase_details d ON p.id = d.purchase_id
+      JOIN products pr ON d.product_id = pr.id
+      WHERE p.id = ?;
+    `,
+      [req.params.id]
+    );
+
+    if (rows.length === 0)
+      return res.status(404).json({ error: "Compra no encontrada" });
+
+    const purchase = {
+      id: rows[0].purchase_id,
+      user: rows[0].user,
+      total: rows[0].total,
+      status: rows[0].status,
+      purchase_date: rows[0].purchase_date,
+      details: rows.map((row) => ({
+        id: row.detail_id,
+        product: row.product,
+        quantity: row.quantity,
+        price: row.price,
+        subtotal: row.subtotal,
+      })),
+    };
+
+    res.json(purchase);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener compra" });
+  }
+});
+
 // =====================================
 // SERVIDOR
 // =====================================
