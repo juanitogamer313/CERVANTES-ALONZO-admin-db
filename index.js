@@ -161,6 +161,82 @@ app.delete("/products/:id", async (req, res) => {
 });
 
 // =====================================
+// PURCHASES
+// =====================================
+
+app.post("/purchases", async (req, res) => {
+  const { user_id, status, details } = req.body;
+  if (!user_id || !status || !details || details.length === 0)
+    return res.status(400).json({ error: "Campos obligatorios" });
+
+  if (details.length > 5)
+    return res
+      .status(400)
+      .json({ error: "No se pueden agregar más de 5 productos" });
+
+  const total = details.reduce(
+    (sum, item) => sum + item.quantity * item.price,
+    0
+  );
+
+  if (total > 3500)
+    return res
+      .status(400)
+      .json({ error: "El total de la compra no puede exceder $3500" });
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const item of details) {
+      const [product] = await connection.query(
+        "SELECT stock FROM products WHERE id = ?",
+        [item.product_id]
+      );
+      if (product.length === 0 || product[0].stock < item.quantity) {
+        await connection.rollback();
+        return res.status(400).json({
+          error: `Stock insuficiente para el producto ID ${item.product_id}`,
+        });
+      }
+      await connection.query(
+        "UPDATE products SET stock = stock - ? WHERE id = ?",
+        [item.quantity, item.product_id]
+      );
+    }
+
+    const [purchaseResult] = await connection.query(
+      "INSERT INTO purchases (user_id, total, status, purchase_date) VALUES (?, ?, ?, NOW())",
+      [user_id, total, status]
+    );
+
+    for (const item of details) {
+      const subtotal = item.quantity * item.price;
+      await connection.query(
+        "INSERT INTO purchase_details (purchase_id, product_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)",
+        [
+          purchaseResult.insertId,
+          item.product_id,
+          item.quantity,
+          item.price,
+          subtotal,
+        ]
+      );
+    }
+
+    await connection.commit();
+    res
+      .status(201)
+      .json({ id: purchaseResult.insertId, message: "Compra creada" });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error creando compra" });
+  } finally {
+    connection.release();
+  }
+});
+
+// =====================================
 // SERVIDOR
 // =====================================
 
