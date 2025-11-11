@@ -21,6 +21,8 @@ app.get("/", (req, res) => {
 // USERS
 // =====================================
 
+// Método	Ruta	        Descripción
+// GET	    /users	        Obtener todos los usuarios
 app.get("/users", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM users");
@@ -31,6 +33,8 @@ app.get("/users", async (req, res) => {
   }
 });
 
+// Método	Ruta	        Descripción
+// GET	    /users/:id	    Obtener un usuario específico por su ID
 app.get("/users/:id", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [
@@ -45,6 +49,8 @@ app.get("/users/:id", async (req, res) => {
   }
 });
 
+// Método	Ruta	        Descripción
+// POST	    /users	        Crear un nuevo usuario
 app.post("/users", async (req, res) => {
   const { name, email, status } = req.body;
   if (!name || !email)
@@ -64,6 +70,8 @@ app.post("/users", async (req, res) => {
   }
 });
 
+// Método	Ruta	        Descripción
+// DELETE	/users/:id	    Eliminar un usuario por su ID
 app.delete("/users/:id", async (req, res) => {
   try {
     const [result] = await pool.query("DELETE FROM users WHERE id = ?", [
