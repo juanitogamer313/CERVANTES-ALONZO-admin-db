@@ -236,6 +236,109 @@ app.post("/purchases", async (req, res) => {
   }
 });
 
+app.put("/purchases/:id", async (req, res) => {
+  const { id } = req.params;
+  const { user_id, status, details } = req.body;
+
+  const connection = await pool.getConnection();
+
+  try {
+    const [existingPurchase] = await connection.query(
+      "SELECT status FROM purchases WHERE id = ?",
+      [id]
+    );
+    if (existingPurchase.length === 0) {
+      return res.status(404).json({ error: "Compra no encontrada" });
+    }
+
+    if (existingPurchase[0].status === "COMPLETED") {
+      return res
+        .status(400)
+        .json({ error: "No se puede modificar una compra COMPLETED" });
+    }
+
+    if (details && details.length > 5) {
+      return res
+        .status(400)
+        .json({ error: "No se pueden agregar más de 5 productos" });
+    }
+
+    const total = details
+      ? details.reduce((sum, item) => sum + item.quantity * item.price, 0)
+      : 0;
+
+    if (total > 3500) {
+      return res
+        .status(400)
+        .json({ error: "El total de la compra no puede exceder $3500" });
+    }
+
+    await connection.beginTransaction();
+
+    await connection.query(
+      "DELETE FROM purchase_details WHERE purchase_id = ?",
+      [id]
+    );
+
+    if (details && details.length > 0) {
+      for (const item of details) {
+        const [product] = await connection.query(
+          "SELECT stock FROM products WHERE id = ?",
+          [item.product_id]
+        );
+
+        if (product.length === 0 || product[0].stock < item.quantity) {
+          await connection.rollback();
+          return res.status(400).json({
+            error: `Stock insuficiente para el producto ID ${item.product_id}`,
+          });
+        }
+
+        await connection.query(
+          "UPDATE products SET stock = stock - ? WHERE id = ?",
+          [item.quantity, item.product_id]
+        );
+
+        const subtotal = item.quantity * item.price;
+        await connection.query(
+          "INSERT INTO purchase_details (purchase_id, product_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)",
+          [id, item.product_id, item.quantity, item.price, subtotal]
+        );
+      }
+    }
+
+    const fields = [];
+    const values = [];
+
+    if (user_id) {
+      fields.push("user_id = ?");
+      values.push(user_id);
+    }
+    if (status) {
+      fields.push("status = ?");
+      values.push(status);
+    }
+    if (details) {
+      fields.push("total = ?");
+      values.push(total);
+    }
+
+    fields.push("purchase_date = NOW()");
+    const sql = `UPDATE purchases SET ${fields.join(", ")} WHERE id = ?`;
+    values.push(id);
+
+    await connection.query(sql, values);
+    await connection.commit();
+
+    res.json({ message: "Compra actualizada correctamente" });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error al actualizar compra" });
+  } finally {
+    connection.release();
+  }
+});
+
 // =====================================
 // SERVIDOR
 // =====================================
