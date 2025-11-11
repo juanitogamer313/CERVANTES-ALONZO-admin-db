@@ -90,6 +90,8 @@ app.delete("/users/:id", async (req, res) => {
 // PRODUCTS
 // =====================================
 
+// Método	Ruta	        Descripción
+// GET	    /products	    Obtener todos los productos
 app.get("/products", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM products");
@@ -99,6 +101,8 @@ app.get("/products", async (req, res) => {
   }
 });
 
+// Método	Ruta	        Descripción
+// GET	    /products/:id	Obtener un producto específico por su ID
 app.get("/products/:id", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM products WHERE id = ?", [
@@ -112,6 +116,8 @@ app.get("/products/:id", async (req, res) => {
   }
 });
 
+// Método	Ruta	        Descripción
+// POST	    /products	    Crear un nuevo producto
 app.post("/products", async (req, res) => {
   const { name, description, price, stock, image } = req.body;
   if (!name || !price || !stock)
@@ -133,6 +139,8 @@ app.post("/products", async (req, res) => {
   }
 });
 
+// Método	Ruta	        Descripción
+// PUT	    /products/:id	Actualizar un producto existente
 app.put("/products/:id", async (req, res) => {
   const { name, description, price, stock, image } = req.body;
   const { id } = req.params;
@@ -155,6 +163,8 @@ app.put("/products/:id", async (req, res) => {
   }
 });
 
+// Método	Ruta	        Descripción
+// DELETE	/products/:id	Eliminar un producto por su ID
 app.delete("/products/:id", async (req, res) => {
   try {
     const [result] = await pool.query("DELETE FROM products WHERE id = ?", [
