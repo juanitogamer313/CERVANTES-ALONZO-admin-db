@@ -422,6 +422,39 @@ app.get("/purchases/:id", async (req, res) => {
   }
 });
 
+app.delete("/purchases/:id", async (req, res) => {
+  const id = req.params.id;
+  const connection = await pool.getConnection();
+
+  try {
+    const [purchase] = await connection.query(
+      "SELECT status FROM purchases WHERE id = ?",
+      [id]
+    );
+    if (purchase.length === 0)
+      return res.status(404).json({ error: "Compra no encontrada" });
+    if (purchase[0].status === "COMPLETED")
+      return res
+        .status(400)
+        .json({ error: "No se puede eliminar una compra COMPLETED" });
+
+    await connection.beginTransaction();
+    await connection.query(
+      "DELETE FROM purchase_details WHERE purchase_id = ?",
+      [id]
+    );
+    await connection.query("DELETE FROM purchases WHERE id = ?", [id]);
+    await connection.commit();
+
+    res.json({ message: "Compra eliminada correctamente" });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: "Error al eliminar compra" });
+  } finally {
+    connection.release();
+  }
+});
+
 // =====================================
 // SERVIDOR
 // =====================================
