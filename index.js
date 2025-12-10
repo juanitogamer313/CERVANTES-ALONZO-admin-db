@@ -17,9 +17,7 @@ app.get("/", (req, res) => {
   res.send("Servidor funcionando correctamente");
 });
 
-// =====================================
 // USERS
-// =====================================
 
 // Método	Ruta	        Descripción
 // GET	    /users	        Obtener todos los usuarios
@@ -86,9 +84,7 @@ app.delete("/users/:id", async (req, res) => {
   }
 });
 
-// =====================================
 // PRODUCTS
-// =====================================
 
 // Método	Ruta	        Descripción
 // GET	    /products	    Obtener todos los productos
@@ -178,9 +174,7 @@ app.delete("/products/:id", async (req, res) => {
   }
 });
 
-// =====================================
 // PURCHASES
-// =====================================
 
 // Método	Ruta	            Descripción
 // POST	    /purchases	        Crear nueva compra con detalles
@@ -245,9 +239,11 @@ app.post("/purchases", async (req, res) => {
     }
 
     await connection.commit();
-    res
-      .status(201)
-      .json({ id: purchaseResult.insertId, message: "Compra creada" });
+    res.status(201).json({
+      id: purchaseResult.insertId,
+      message: "Compra creada",
+      total: total,
+    });
   } catch (err) {
     await connection.rollback();
     res.status(500).json({ error: "Error creando compra" });
